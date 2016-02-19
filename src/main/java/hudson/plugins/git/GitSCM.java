@@ -59,6 +59,7 @@ import org.kohsuke.stapler.export.Exported;
 
 import javax.servlet.ServletException;
 
+import java.io.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -1028,6 +1029,27 @@ public class GitSCM extends GitSCMBackwardCompatibility {
             }
         }
     }
+	
+	/** 
+	* Retrieve Git LFS occurs
+	* We need to perform 'git lfs fetch' and 'git lfs checkout'
+	* ToDO:
+	* 1. Check if LFS checkbox is enabled
+	*/
+	
+	private void retrieveLFSObjects(Run build, GitClient git, TaskListener listener) throws IOException, InterruptedException {
+		// only run if repository exists (skip for clean clone)
+		if (git.hasGitRepo()) {
+			final PrintStream log = listener.getLogger();
+			log.println("Getting LFS objects");
+		//assuming there is only 1 repository
+		//no try-catch yet
+		// before I find a nice Java lib with LFS support, just run the system command
+		
+			Runtime.getRuntime().exec("git lfs fetch");
+			Runtime.getRuntime().exec("git lfs checkout");
+		}
+	}
 
     @Override
     public void checkout(Run<?, ?> build, Launcher launcher, FilePath workspace, TaskListener listener, File changelogFile, SCMRevisionState baseline)
@@ -1051,6 +1073,7 @@ public class GitSCM extends GitSCMBackwardCompatibility {
         }
 
         retrieveChanges(build, git, listener);
+		retrieveLFSObjects(build, git, listener);
         Build revToBuild = determineRevisionToBuild(build, buildData, environment, git, listener);
 
         // Track whether we're trying to add a duplicate BuildData, now that it's been updated with
